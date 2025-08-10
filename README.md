@@ -27,9 +27,12 @@
 
 ### 1. 環境設定
 ```bash
-# 克隆倉庫
-git clone https://github.com/your-username/Yolov7Tiny320_Baseline.git
+# 克隆倉庫（包含子模組）
+git clone --recursive https://github.com/your-username/Yolov7Tiny320_Baseline.git
 cd Yolov7Tiny320_Baseline
+
+# 如果忘記使用 --recursive，可執行：
+# git submodule update --init --recursive
 
 # 一鍵設定環境
 ./scripts/setup_env.sh
