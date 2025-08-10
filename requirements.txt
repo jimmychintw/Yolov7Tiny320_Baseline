@@ -1,0 +1,36 @@
+# YOLOv7-tiny Baseline Requirements
+# 根據 Baseline Spec v1.0 鎖定版本
+
+# Core ML Framework
+torch==2.2.2
+torchvision==0.17.2
+numpy>=1.21.0
+
+# ONNX and Quantization
+onnx==1.15.0
+onnxruntime==1.17.1
+onnxruntime-tools==1.7.0
+onnxsim==0.4.36
+
+# Computer Vision
+opencv-python>=4.5.0
+Pillow>=8.0.0
+
+# Data Processing
+pycocotools>=2.0.6
+tqdm>=4.62.0
+PyYAML>=5.4.1
+
+# Scientific Computing
+scipy>=1.7.0
+matplotlib>=3.3.0
+seaborn>=0.11.0
+
+# Utilities
+requests>=2.25.0
+tensorboard>=2.8.0
+thop  # For FLOPs calculation
+
+# Optional: For advanced features
+# wandb  # For experiment tracking
+# clearml  # For experiment management

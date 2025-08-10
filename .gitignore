@@ -1,0 +1,105 @@
+# YOLOv7-tiny Baseline .gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyTorch
+*.pth
+*.pt
+!yolov7-tiny.pt  # Keep the pretrained weight
+
+# ONNX models
+*.onnx
+
+# Virtual Environment
+venv/
+venv_*/
+env/
+ENV/
+
+# Training outputs
+runs/
+val_results/
+logs/
+
+# Data files
+*.txt
+!requirements.txt
+!CLAUDE.md
+!README.md
+!*.md
+
+# Generated files
+*.sha256
+*_md5.txt
+eval_report.json
+ENV.md
+ENV_SETUP.md
+.env
+activate_baseline.sh
+
+# Temporary files
+*.tmp
+*.log
+.val_watcher_processed
+val_watcher.log
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Data directories (typically large)
+data/train2017/
+data/val2017/
+data/annotations/
+/data/coco/
+
+# Weights directory (except specific files)
+weights/
+*.weights
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
