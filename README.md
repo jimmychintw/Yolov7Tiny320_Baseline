@@ -28,7 +28,7 @@
 ### 1. 環境設定
 ```bash
 # 克隆倉庫（包含子模組）
-git clone --recursive https://github.com/your-username/Yolov7Tiny320_Baseline.git
+git clone --recursive https://github.com/jimmychintw/Yolov7Tiny320_Baseline.git
 cd Yolov7Tiny320_Baseline
 
 # 如果忘記使用 --recursive，可執行：
