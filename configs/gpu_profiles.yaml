@@ -1,0 +1,77 @@
+# GPU 配置檔案
+# 不同 GPU 的最佳訓練參數
+
+# RTX 4090 (24GB)
+rtx4090:
+  batch_size: 128
+  accumulate: 1
+  lr0: 0.01
+  workers: 4
+  amp: true
+  notes: "基準配置"
+
+# RTX 5090 (32GB 預估)
+rtx5090:
+  batch_size: 256
+  accumulate: 1
+  lr0: 0.02
+  workers: 6
+  amp: true
+  notes: "2x batch size, 2x lr"
+
+# H100 (80GB)
+h100:
+  batch_size: 640
+  accumulate: 1
+  lr0: 0.05
+  workers: 8
+  amp: true
+  notes: "5x batch size, 5x lr"
+
+# B200 (192GB)
+b200:
+  batch_size: 1536
+  accumulate: 1
+  lr0: 0.12
+  workers: 16
+  amp: true
+  notes: "12x batch size, 12x lr"
+
+# 多 GPU 配置範例
+multi_gpu:
+  # 2x 4090
+  2x4090:
+    batch_size: 256
+    accumulate: 1
+    lr0: 0.02
+    workers: 8
+    
+  # 4x 4090
+  4x4090:
+    batch_size: 512
+    accumulate: 1
+    lr0: 0.04
+    workers: 16
+    
+  # 8x H100
+  8xh100:
+    batch_size: 5120
+    accumulate: 1
+    lr0: 0.40
+    workers: 64
+
+# 學習率調整策略
+lr_scaling:
+  method: "linear"  # linear, sqrt, custom
+  base_batch: 128
+  base_lr: 0.01
+  max_lr: 0.16  # 防止過大
+  warmup_factor: 0.1
+  
+# 記憶體優化建議
+memory_optimization:
+  gradient_checkpointing: false  # YOLOv7-tiny 不需要
+  mixed_precision: true  # 使用 AMP
+  pin_memory: true
+  persistent_workers: true
+  prefetch_factor: 2

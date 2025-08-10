@@ -46,6 +46,9 @@ logs/
 # Data files
 *.txt
 !requirements.txt
+!data/train.txt
+!data/val.txt
+!data/calib.txt
 !CLAUDE.md
 !README.md
 !*.md
@@ -82,10 +85,7 @@ Thumbs.db
 *~
 
 # Data directories (typically large)
-data/train2017/
-data/val2017/
-data/annotations/
-/data/coco/
+data/coco/
 
 # Weights directory (except specific files)
 weights/
