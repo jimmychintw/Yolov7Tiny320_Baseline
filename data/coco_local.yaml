@@ -1,0 +1,29 @@
+# COCO 2017 dataset - 本地路徑版本（避免自動下載）
+# 不設定 download 欄位，防止觸發自動下載
+
+# 資料集位於專案的 data/coco 目錄
+# 路徑相對於 yolov7 目錄（訓練時的工作目錄）
+
+# 選項 1: 使用圖片目錄（YOLOv7 會自動搜尋）
+train: ../data/coco/train2017  # 專案根目錄/data/coco/train2017
+val: ../data/coco/val2017      # 專案根目錄/data/coco/val2017
+
+# 選項 2: 使用清單檔案（如果已生成）
+# train: ../train.txt   # 專案根目錄/train.txt
+# val: ../val.txt       # 專案根目錄/val.txt
+
+test: ../data/coco/val2017     # 使用 val 作為測試集
+
+# number of classes
+nc: 80
+
+# class names
+names: [ 'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat', 'traffic light',
+         'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse', 'sheep', 'cow',
+         'elephant', 'bear', 'zebra', 'giraffe', 'backpack', 'umbrella', 'handbag', 'tie', 'suitcase', 'frisbee',
+         'skis', 'snowboard', 'sports ball', 'kite', 'baseball bat', 'baseball glove', 'skateboard', 'surfboard',
+         'tennis racket', 'bottle', 'wine glass', 'cup', 'fork', 'knife', 'spoon', 'bowl', 'banana', 'apple',
+         'sandwich', 'orange', 'broccoli', 'carrot', 'hot dog', 'pizza', 'donut', 'cake', 'chair', 'couch',
+         'potted plant', 'bed', 'dining table', 'toilet', 'tv', 'laptop', 'mouse', 'remote', 'keyboard', 'cell phone',
+         'microwave', 'oven', 'toaster', 'sink', 'refrigerator', 'book', 'clock', 'vase', 'scissors', 'teddy bear',
+         'hair drier', 'toothbrush' ]

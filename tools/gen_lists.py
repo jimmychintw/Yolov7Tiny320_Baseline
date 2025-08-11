@@ -10,20 +10,28 @@ from pathlib import Path
 import argparse
 
 
-def generate_file_lists(coco_path="/data/coco", output_dir="."):
+def generate_file_lists(coco_path=None, output_dir="."):
     """
     生成訓練、驗證和校正集清單
     
     Args:
-        coco_path: COCO 資料集路徑
+        coco_path: COCO 資料集路徑（預設為專案的 data/coco）
         output_dir: 輸出清單檔案的目錄
     """
+    # 如果沒有指定 coco_path，使用專案內的 data/coco
+    if coco_path is None:
+        script_dir = Path(__file__).parent
+        project_root = script_dir.parent
+        coco_path = project_root / 'data' / 'coco'
+    else:
+        coco_path = Path(coco_path)
+    
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     
     # 訓練集清單
-    train_dir = Path(coco_path) / "train2017"
-    val_dir = Path(coco_path) / "val2017"
+    train_dir = coco_path / "train2017"
+    val_dir = coco_path / "val2017"
     
     print(f"生成訓練集清單...")
     train_images = sorted(train_dir.glob("*.jpg"))
@@ -126,8 +134,8 @@ def create_yolo_format_lists(train_txt, val_txt, output_dir="."):
 
 def main():
     parser = argparse.ArgumentParser(description='生成 COCO 2017 資料集清單')
-    parser.add_argument('--coco-path', type=str, default='/data/coco',
-                        help='COCO 資料集路徑')
+    parser.add_argument('--coco-path', type=str, default=None,
+                        help='COCO 資料集路徑（預設為專案的 data/coco）')
     parser.add_argument('--output-dir', type=str, default='.',
                         help='輸出目錄')
     parser.add_argument('--skip-sha256', action='store_true',
@@ -137,12 +145,20 @@ def main():
     
     args = parser.parse_args()
     
-    print(f"COCO 資料集路徑: {args.coco_path}")
+    # 處理預設路徑
+    if args.coco_path is None:
+        script_dir = Path(__file__).parent
+        project_root = script_dir.parent
+        coco_path = project_root / 'data' / 'coco'
+    else:
+        coco_path = args.coco_path
+    
+    print(f"COCO 資料集路徑: {coco_path}")
     print(f"輸出目錄: {args.output_dir}\n")
     
     # 生成基本清單
     train_txt, val_txt, calib_txt = generate_file_lists(
-        args.coco_path, args.output_dir
+        coco_path, args.output_dir
     )
     
     # 生成 SHA256 校驗檔

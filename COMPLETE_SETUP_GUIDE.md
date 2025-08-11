@@ -44,14 +44,14 @@ pip install -r requirements.txt
 # 4. 初始化子模組
 git submodule update --init --recursive
 
-# 5. 下載 COCO 資料集（解壓縮 coco.tar.gz）
+# 5. 準備 COCO 資料集（解壓縮 coco.tar.gz 到 data/coco）
 bash tools/unpack_coco.sh
 
-# 6. 生成資料清單
-python tools/gen_lists.py --coco-path ./data/coco --output-dir ./data
+# 6. 生成資料清單（預設使用專案內的 data/coco）
+python tools/gen_lists.py  # 自動使用 data/coco 目錄
 
-# 7. 開始訓練
-python tools/adaptive_train.py --epochs 300
+# 7. 開始訓練（會檢查資料集，不存在會報錯）
+python tools/adaptive_train.py --epochs 300 --data ../data/coco_local.yaml
 ```
 
 ## 📦 詳細安裝步驟
@@ -116,6 +116,45 @@ cd ..
 
 ## 💾 資料集設定
 
+### 重要說明：資料集路徑與防止自動下載
+
+本專案的資料集應放置在**專案根目錄**的 `data/coco` 目錄內：
+
+```
+Yolov7Tiny320_Baseline/
+├── data/
+│   └── coco/           # COCO 資料集位置（專案內）
+│       ├── train2017/  # 訓練圖片
+│       ├── val2017/    # 驗證圖片
+│       └── annotations/ # 標註檔案
+├── yolov7/            # YOLOv7 官方程式碼
+└── tools/             # 工具腳本
+```
+
+**防止自動下載機制**：
+- 訓練腳本會在開始前檢查資料集是否存在
+- 如果資料集不存在，會直接報錯並退出，**不會自動下載**
+- 這確保訓練環境的可控性和避免意外的網路下載
+
+## 💾 資料集設定
+
+### 重要：安全訓練機制
+
+本專案實作了**安全訓練機制**，確保：
+
+1. **資料集預檢查**：訓練前自動檢查資料集是否存在
+2. **禁止自動下載**：資料集不存在時直接報錯，不會觸發 YOLOv7 的自動下載
+3. **明確錯誤提示**：提供詳細的錯誤訊息和解決方案
+
+使用安全訓練腳本：
+```bash
+# 使用 safe_train.py（完整檢查）
+python tools/safe_train.py --epochs 300
+
+# 使用 adaptive_train.py（包含檢查）
+python tools/adaptive_train.py --epochs 300 --data ../data/coco_local.yaml
+```
+
 ### 方法 1：使用壓縮檔（推薦）
 
 如果你有 `coco.tar.gz` 壓縮檔：
@@ -131,8 +170,8 @@ bash tools/unpack_coco.sh
 ls data/coco/
 # 應該看到：train2017/, val2017/, annotations/
 
-# 4. 生成訓練清單
-python tools/gen_lists.py --coco-path ./data/coco --output-dir ./data
+# 4. 生成訓練清單（自動偵測 data/coco）
+python tools/gen_lists.py  # 預設使用專案內的 data/coco
 
 # 5. 確認清單檔案
 wc -l data/*.txt
@@ -167,8 +206,11 @@ rm *.zip
 
 cd ../..
 
-# 生成清單
-python tools/gen_lists.py --coco-path ./data/coco --output-dir ./data
+# 生成清單（預設使用專案內的 data/coco）
+python tools/gen_lists.py  # 自動使用 data/coco
+
+# 或指定其他路徑
+python tools/gen_lists.py --coco-path /custom/path/coco
 ```
 
 ## 🔥 訓練指令
@@ -177,13 +219,24 @@ python tools/gen_lists.py --coco-path ./data/coco --output-dir ./data
 
 ```bash
 # 自動偵測 GPU 並選擇最佳參數
-python tools/adaptive_train.py --epochs 300
+python tools/adaptive_train.py --epochs 300 --data ../data/coco_local.yaml
 
 # 執行過程會顯示：
+# 檢查資料集配置: ../data/coco_local.yaml
+#   ✓ train: ../data/coco/train2017 (118287 張圖片)
+#   ✓ val: ../data/coco/val2017 (5000 張圖片)
+# ✓ 資料集檢查通過
+# 
 # 檢測到 GPU: NVIDIA RTX 4090
 # VRAM: 24.0 GB
 # 自動選擇 batch size: 128
 # 自動計算學習率: 0.0100
+
+# 如果資料集不存在，會顯示：
+# ❌ 錯誤：找不到以下資料集路徑：
+#   - train: /path/to/missing/data
+# 請先準備好資料集...
+# (程式直接退出，不會開始訓練)
 ```
 
 ### 手動指定參數
@@ -194,7 +247,8 @@ python tools/adaptive_train.py \
     --batch-size 256 \
     --lr 0.02 \
     --epochs 300 \
-    --img 320
+    --img 320 \
+    --data ../data/coco_local.yaml
 
 # 多 GPU 訓練
 ./train_multi_gpu.sh
@@ -331,20 +385,20 @@ tensorboard --logdir yolov7/runs/train/
 #### 1. 生成資料清單 (`tools/gen_lists.py`)
 
 ```bash
-# 基本用法
-python tools/gen_lists.py --coco-path ./data/coco --output-dir ./data
+# 基本用法（預設使用 data/coco）
+python tools/gen_lists.py
 
 # 完整參數
 python tools/gen_lists.py \
-    --coco-path ./data/coco \      # COCO 資料集路徑
-    --output-dir ./data \          # 輸出目錄
+    --coco-path ./data/coco \      # COCO 資料集路徑（預設：data/coco）
+    --output-dir . \               # 輸出目錄（預設：專案根目錄）
     --skip-sha256 \                # 跳過 SHA256 生成
     --yolo-format                  # 生成 YOLOv7 格式清單
 
 # 輸出檔案
-# - data/train.txt (118,287 張訓練圖片路徑)
-# - data/val.txt (5,000 張驗證圖片路徑)
-# - data/calib.txt (500 張校正圖片路徑)
+# - train.txt (118,287 張訓練圖片路徑)
+# - val.txt (5,000 張驗證圖片路徑)
+# - calib.txt (500 張校正圖片路徑)
 ```
 
 #### 2. 生成 SHA256 校驗 (`tools/gen_manifests.sh`)
@@ -401,7 +455,7 @@ bash tools/unpack_coco.sh /path/to/coco.tar.gz
 
 ```bash
 # 自動模式（推薦）
-python tools/adaptive_train.py --epochs 300
+python tools/adaptive_train.py --epochs 300 --data ../data/coco_local.yaml
 
 # 完整參數
 python tools/adaptive_train.py \
@@ -514,8 +568,8 @@ python tools/ort_ptq.py \
 ### 步驟 1：訓練模型
 
 ```bash
-# 使用自適應訓練
-python tools/adaptive_train.py --epochs 300
+# 使用自適應訓練（包含資料集檢查）
+python tools/adaptive_train.py --epochs 300 --data ../data/coco_local.yaml
 
 # 或傳統方式
 cd yolov7
@@ -590,6 +644,50 @@ cat eval_report.json | jq '.models[] | {name, mAP50_95, latency_ms}'
 ```
 
 ## ❓ 常見問題
+
+### Q: 為什麼訓練時會報錯「找不到資料集」？
+
+這是**正常的安全機制**。本專案禁用了 YOLOv7 的自動下載功能：
+
+```bash
+# 錯誤訊息範例：
+# ❌ 錯誤：找不到以下資料集路徑：
+#   - train: /path/to/data/coco/train2017
+#   - val: /path/to/data/coco/val2017
+
+# 解決方案：
+# 1. 確認資料集在 data/coco/ 目錄
+ls data/coco/
+# 應該看到 train2017/, val2017/, annotations/
+
+# 2. 生成資料清單
+python tools/gen_lists.py
+
+# 3. 重新開始訓練
+python tools/adaptive_train.py --epochs 300 --data ../data/coco_local.yaml
+```
+
+### Q: 為什麼不能自動下載資料集？
+
+理由：
+1. **可控性**：避免意外的大量下載（COCO 約 20GB）
+2. **安全性**：企業環境可能禁止外部下載
+3. **可重現性**：確保使用相同版本的資料集
+4. **效率**：避免重複下載已有的資料
+
+### Q: 如何確認資料集路徑設定正確？
+
+檢查 `data/coco_local.yaml` 的設定：
+
+```yaml
+# 正確設定（相對於 yolov7 工作目錄）
+train: ../data/coco/train2017  # 專案根目錄/data/coco/train2017
+val: ../data/coco/val2017      # 專案根目錄/data/coco/val2017
+
+# 或使用清單檔案
+train: ../train.txt   # 專案根目錄/train.txt
+val: ../val.txt       # 專案根目錄/val.txt
+```
 
 ### Q: 記憶體不足怎麼辦？
 

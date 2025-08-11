@@ -10,6 +10,7 @@ import yaml
 import os
 import sys
 from pathlib import Path
+import json
 
 # GPU 配置表 (VRAM GB -> 建議 batch size)
 GPU_CONFIGS = {
@@ -87,6 +88,111 @@ def calculate_learning_rate(batch_size, accumulate=1):
     
     return scaled_lr, warmup_bias_lr
 
+def validate_dataset(data_yaml_path, yolov7_dir):
+    """驗證資料集是否存在，不存在則報錯退出"""
+    print(f"\n檢查資料集配置: {data_yaml_path}")
+    
+    # 讀取資料配置
+    yaml_full_path = yolov7_dir / data_yaml_path if not Path(data_yaml_path).is_absolute() else Path(data_yaml_path)
+    
+    if not yaml_full_path.exists():
+        print(f"❌ 錯誤：找不到資料配置檔 {yaml_full_path}")
+        print("請確認檔案路徑是否正確")
+        sys.exit(1)
+    
+    with open(yaml_full_path, 'r') as f:
+        data = yaml.safe_load(f)
+    
+    # 專案根目錄（yolov7 的上層目錄）
+    project_root = yolov7_dir.parent
+    
+    # 檢查必要的資料路徑
+    required_keys = ['train', 'val']
+    missing_data = []
+    
+    for key in required_keys:
+        if key not in data:
+            print(f"❌ 錯誤：資料配置缺少 '{key}' 欄位")
+            sys.exit(1)
+        
+        data_path = data[key]
+        
+        # 處理相對路徑
+        if not Path(data_path).is_absolute():
+            # 相對於 yolov7 目錄（訓練時的工作目錄）
+            full_path = yolov7_dir / data_path
+            # 如果不存在，也檢查專案根目錄
+            if not full_path.exists() and data_path.startswith('../'):
+                # 處理 ../data/coco 這種相對路徑
+                alt_path = project_root / data_path.replace('../', '')
+                if alt_path.exists():
+                    full_path = alt_path
+        else:
+            full_path = Path(data_path)
+        
+        # 檢查路徑是否存在
+        if not full_path.exists():
+            missing_data.append(f"  - {key}: {full_path}")
+        else:
+            # 檢查是目錄還是檔案
+            if full_path.is_dir():
+                # 檢查目錄是否有圖片
+                images = list(full_path.glob('*.jpg')) + list(full_path.glob('*.png'))
+                if not images:
+                    missing_data.append(f"  - {key}: {full_path} (目錄存在但沒有圖片)")
+                else:
+                    print(f"  ✓ {key}: {full_path} ({len(images)} 張圖片)")
+            elif full_path.is_file():
+                # 檢查清單檔案
+                with open(full_path, 'r') as f:
+                    lines = f.readlines()
+                    valid_lines = [l.strip() for l in lines if l.strip()]
+                    if not valid_lines:
+                        missing_data.append(f"  - {key}: {full_path} (檔案存在但沒有內容)")
+                    else:
+                        # 檢查第一個檔案是否存在
+                        first_file = Path(valid_lines[0])
+                        if not first_file.exists():
+                            missing_data.append(f"  - {key}: 清單中的檔案不存在 ({first_file})")
+                        else:
+                            print(f"  ✓ {key}: {full_path} ({len(valid_lines)} 個檔案)")
+    
+    # 檢查標籤目錄（如果指定了）
+    if 'train' in data:
+        train_path = data['train']
+        if not Path(train_path).is_absolute():
+            train_full = yolov7_dir / train_path
+        else:
+            train_full = Path(train_path)
+        
+        # 推測標籤路徑
+        if train_full.exists():
+            if 'images' in str(train_full):
+                label_path = Path(str(train_full).replace('images', 'labels'))
+                if not label_path.exists():
+                    print(f"  ⚠️  警告：找不到標籤目錄 {label_path}")
+                    print(f"     請確認標籤檔案位置")
+    
+    # 如果有缺失的資料，報錯退出
+    if missing_data:
+        print("\n❌ 錯誤：找不到以下資料集路徑：")
+        for item in missing_data:
+            print(item)
+        print("\n請先準備好資料集，確保：")
+        print("1. COCO 資料集已下載到專案的 data/coco/ 目錄")
+        print("   - data/coco/train2017/ (訓練圖片)")
+        print("   - data/coco/val2017/ (驗證圖片)")
+        print("   - data/coco/annotations/ (標註檔案)")
+        print("2. 如果使用清單檔案，執行 python tools/gen_lists.py 生成")
+        print("3. 確認 data/coco_local.yaml 中的路徑配置正確")
+        print("\n建議執行：")
+        print("  python tools/gen_lists.py  # 生成資料清單")
+        print("  或確認資料集在 data/coco/ 目錄")
+        sys.exit(1)
+    
+    print("✓ 資料集檢查通過\n")
+    return True
+
 def create_custom_hyp(base_hyp_path, output_path, lr0, warmup_bias_lr):
     """創建自定義超參數檔案"""
     with open(base_hyp_path, 'r') as f:
@@ -111,6 +217,7 @@ def main():
     parser.add_argument('--workers', type=int, default=4, help='DataLoader workers')
     parser.add_argument('--name', default='adaptive', help='訓練名稱')
     parser.add_argument('--weights', default='yolov7-tiny.pt', help='預訓練權重')
+    parser.add_argument('--data', default='data/coco.yaml', help='資料集配置檔')
     
     # 手動指定
     parser.add_argument('--batch-size', type=int, help='手動指定 batch size')
@@ -151,6 +258,18 @@ def main():
     project_root = Path(__file__).parent.parent
     yolov7_dir = project_root / 'yolov7'
     
+    # 驗證資料集存在（在訓練前檢查）
+    validate_dataset(args.data, yolov7_dir)
+    
+    # 檢查預訓練權重
+    weights_path = yolov7_dir / args.weights if not Path(args.weights).is_absolute() else Path(args.weights)
+    if not weights_path.exists():
+        print(f"❌ 錯誤：找不到預訓練權重 {weights_path}")
+        print("請下載 yolov7-tiny.pt 到 yolov7 目錄")
+        print("下載連結：https://github.com/WongKinYiu/yolov7/releases")
+        sys.exit(1)
+    print(f"✓ 預訓練權重: {weights_path}")
+    
     # 創建自定義超參數檔案
     base_hyp = yolov7_dir / 'data' / 'hyp.scratch.tiny.yaml'
     custom_hyp = project_root / 'data' / f'hyp_bs{effective_batch}.yaml'
@@ -166,7 +285,7 @@ def main():
         '--batch', str(batch_size),
         '--epochs', str(args.epochs),
         '--cfg', 'cfg/training/yolov7-tiny.yaml',
-        '--data', 'data/coco.yaml',
+        '--data', args.data,
         '--weights', args.weights,
         '--device', args.device,
         '--workers', str(args.workers),
